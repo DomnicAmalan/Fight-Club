@@ -5,8 +5,9 @@
  * @format
  * @flow strict-local
  */
-
 import React from 'react';
+import 'react-native-gesture-handler'
+
 import {
   SafeAreaView,
   StyleSheet,
@@ -23,7 +24,10 @@ import {
   DebugInstructions,
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
+
 import SignInScreen from './components/AuthComponent'
+
+
 
 const App: () => React$Node = () => {
   return (

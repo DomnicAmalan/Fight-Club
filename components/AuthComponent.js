@@ -6,13 +6,12 @@ import appleAuth, { AppleAuthRequestScope, AppleAuthRequestOperation } from '@in
 import { LoginManager, AccessToken } from 'react-native-fbsdk';
 
 
-
 const GOOGLE_CLIENT_ID = "736979816766-t7pljfne534v2o29v7d0hpbkg57tesdc.apps.googleusercontent.com"
 GoogleSignin.configure({
     webClientId: GOOGLE_CLIENT_ID,
 });
 
-const SignInTabs = (props) => {
+const SignInTabs = (props, {navigation}) => {
     let resp = null
     const CallSignInMethod = async(type) => {
         if(type == "GOOGLE"){
@@ -25,7 +24,7 @@ const SignInTabs = (props) => {
             resp = await FacebookButtonPress()
         }
         else if(type == "MOBILE"){
-             
+            return <Phone />
         }
     }
     console.log(resp)
@@ -42,6 +41,11 @@ const SignInTabs = (props) => {
     )
 }
 
+const Phone = () => {
+    return(
+        <View><Text>Test</Text></View>
+    )
+}
 
 const AppleButtonPress = async() => {
     // Start the sign-in request
@@ -105,16 +109,19 @@ async function FacebookButtonPress() {
 }
 
 const SignInScreen = () => {
-      
     return(
         <View style={tabStyle.container}>
             <SignInTabs image={require('../assets/auth-logos/google-logo.png')} title={"CONTINUE WITH GOOGLE"} navigation={"GOOGLE"}/>
             <SignInTabs image={require('../assets/auth-logos/facebook.png')} title={"CONTINUE WITH FACEBOOK"} navigation={"FACEBOOK"}/>
             { Platform.OS =="ios" ? <SignInTabs image={require('../assets/auth-logos/apple.png')} title={"CONTINUE WITH APPLE"} navigation={"APPLE"} /> : null }
-            <SignInTabs image={require('../assets/auth-logos/mobile.png')} title={"CONTINUE WITH MOBILE"} navigation={"MOBILE"}/>
+            <View><Text style={tabStyle.title}> - OR </Text></View>
+            <SignInTabs image={require('../assets/auth-logos/mobile.png')} title={"CONTINUE WITH MOBILE"} />
         </View>
     )
 }
+
+
+
 
 const tabStyle = StyleSheet.create({
     tab: {

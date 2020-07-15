@@ -1,14 +1,15 @@
-import React, {useState} from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Platform, Dimensions, TextInput, Button, PickerIOSItem } from 'react-native';
+import React, {useState ,useContext} from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Platform, TextInput, Button } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-community/google-signin';
 import appleAuth, { AppleAuthRequestScope, AppleAuthRequestOperation } from '@invertase/react-native-apple-authentication';
 import { LoginManager, AccessToken } from 'react-native-fbsdk';
-import { NavigationContainer, CommonActions } from '@react-navigation/native'
+import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
 import {Picker} from '@react-native-community/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import countries from '../constants/countries'
+import { UserContext, UserProvider } from '../contexts/context'
 
 const DashboardStack = createStackNavigator();
 
@@ -31,7 +32,6 @@ const SignInTabs = (props, {navigation}) => {
             resp = await FacebookButtonPress()
         }
     }
-    console.log(resp, "yes")
     
     return(
         <TouchableOpacity style={tabStyle.tab} onPress={() => CallSignInMethod(props.navigation)}>
@@ -126,6 +126,8 @@ const  PhoneAuthScreen = () => {
     const [mobileNumberError, setMobileNumberError] = useState(null)
     const [countryCode, setCountryCode] = useState(null)
 
+    const setLogin = useContext(UserContext)
+
   // Handle the button press
     async function signInWithPhoneNumber() {
         if(mobileNumber){
@@ -152,7 +154,9 @@ const  PhoneAuthScreen = () => {
     const VerifyCode = async() => {
         try {
           const resp = await confirm.confirm(code);
-          console.log(resp, "yes")
+            if(resp){
+                setLogin(true)
+            }
           
           return true
         } catch (error) {

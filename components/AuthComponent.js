@@ -1,4 +1,4 @@
-import React, {useState ,useContext} from 'react';
+import React, {useState ,useContext, useEffect} from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Platform, TextInput, Button } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-community/google-signin';
@@ -10,26 +10,35 @@ import {Picker} from '@react-native-community/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import countries from '../constants/countries'
 import { UserContext, UserProvider } from '../contexts/context'
+import AsyncStorage from '@react-native-community/async-storage';
+import { set } from 'react-native-reanimated';
 
-const DashboardStack = createStackNavigator();
+const AuthStack = createStackNavigator();
 
 
-const GOOGLE_CLIENT_ID = "736979816766-t7pljfne534v2o29v7d0hpbkg57tesdc.apps.googleusercontent.com"
-GoogleSignin.configure({
-    webClientId: GOOGLE_CLIENT_ID,
-});
 
 const SignInTabs = (props, {navigation}) => {
+    const setLogin = useContext(UserContext)
+    const Login = () => {
+        setLogin(true)
+    }
+
     let resp = null;
     const CallSignInMethod = async(type) => {
         if(type == "GOOGLE"){
             resp = await GoogleButtonPress()
+            if(resp){
+                Login()
+            }
         }
         else if(type == "APPLE"){
             resp = await AppleButtonPress()
         }
         else if(type == "FACEBOOK"){
             resp = await FacebookButtonPress()
+            if(resp){
+                Login()
+            }
         }
     }
     
@@ -66,21 +75,38 @@ const AppleButtonPress = async() => {
 }
 
 const GoogleButtonPress = async() => {
+    const GOOGLE_CLIENT_ID = "736979816766-t7pljfne534v2o29v7d0hpbkg57tesdc.apps.googleusercontent.com"
+    GoogleSignin.configure({
+        webClientId: GOOGLE_CLIENT_ID,
+    });
+
     // Get the users ID token
     const { idToken } = await GoogleSignin.signIn();
-  
+
     // Create a Google credential with the token
     const googleCredential = auth.GoogleAuthProvider.credential(idToken);
   
     // Sign-in the user with the credential
     const resp =  await auth().signInWithCredential(googleCredential);
+    if(resp){
+        let uid = resp["user"]["uid"]
+        let type = "GOOGLE"
+        let identifier = resp["user"]["email"]
+        AsyncStorage.setItem('uid', uid)
+        AsyncStorage.setItem('identifier', identifier)
+        AsyncStorage.setItem('type', type)
+        return true
+    }
+    else{
+        return false
+    }
 }
 
 
 async function FacebookButtonPress() {
     // Attempt login with permissions
     const result = await LoginManager.logInWithPermissions(['email']);
-  
+
     if (result.isCancelled) {
       throw 'User cancelled the login process';
     }
@@ -96,7 +122,21 @@ async function FacebookButtonPress() {
     const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
   
     // Sign-in the user with the credential
-    const resp =  await auth().signInWithCredential(facebookCredential);
+    
+    const resp = await auth().signInWithCredential(facebookCredential)
+
+    if(resp){
+        let uid = resp["user"]["uid"]
+        let type = "FACEBOOK"
+        let identifier = resp["user"]["facebook"] ? resp["user"]["facebook"] : ""
+        AsyncStorage.setItem('uid', uid)
+        AsyncStorage.setItem('identifier', identifier)
+        AsyncStorage.setItem('type', type)
+        return true
+    }
+    else{
+        return false
+    }
 }
 
 const SignInScreen = ({navigation}) => {
@@ -125,9 +165,12 @@ const  PhoneAuthScreen = () => {
     const [code, setCode] = useState(null)
     const [mobileNumberError, setMobileNumberError] = useState(null)
     const [countryCode, setCountryCode] = useState(null)
-
     const setLogin = useContext(UserContext)
+    const Login = () => {
+        setLogin(true)
+    }
 
+    console.log(countryCode, "yes")
   // Handle the button press
     async function signInWithPhoneNumber() {
         if(mobileNumber){
@@ -153,12 +196,16 @@ const  PhoneAuthScreen = () => {
 
     const VerifyCode = async() => {
         try {
-          const resp = await confirm.confirm(code);
+            const resp = await confirm.confirm(code);
             if(resp){
-                setLogin(true)
+                let uid = resp["user"]["uid"]
+                let type = "MOBILE"
+                let identifier = resp["user"]["phoneNumber"]
+                AsyncStorage.setItem('uid', uid)
+                AsyncStorage.setItem('identifier', identifier)
+                AsyncStorage.setItem('type', type)
+                Login()
             }
-          
-          return true
         } catch (error) {
           console.log('Invalid code.');
         }
@@ -192,6 +239,7 @@ const  PhoneAuthScreen = () => {
                     keyboardType={'phone-pad'}
                     editable={confirm ? false : true} selectTextOnFocus={confirm ? false: true} 
                 />
+                <TouchableOpacity onPress={() => setConfirm(false)}><Text style={tabStyle.changeNumber}>Change Number</Text></TouchableOpacity>
                 {mobileNumberError ? <View><Text style={tabStyle.error}>{mobileNumberError}</Text></View>: <View />}
                 <TouchableOpacity  onPress={() =>  signInWithPhoneNumber()}><Text>Send</Text></TouchableOpacity>
             </View>
@@ -270,19 +318,23 @@ const tabStyle = StyleSheet.create({
         height: 50,
         width: 300,
         
+    },
+    changeNumber: {
+        color: "blue"
     }
 })
 
-const AuthRoute = () => {
+const AuthRoute = () => {    
     return(
         <NavigationContainer>
-            <DashboardStack.Navigator mode='modal' headerMode='none'>
-                <DashboardStack.Screen name="MainAuth" component={SignInScreen} />
-                <DashboardStack.Screen name="Phone" component={PhoneAuthScreen} />
-            </DashboardStack.Navigator>
+            <AuthStack.Navigator headerMode='none'>
+                <AuthStack.Screen name="MainAuth" component={SignInScreen} />
+                <AuthStack.Screen name="Phone" component={PhoneAuthScreen} />
+            </AuthStack.Navigator>
         </NavigationContainer>
     )
 }
+
 
 
 export default AuthRoute;
